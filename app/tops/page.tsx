@@ -1,58 +1,27 @@
-'use client'
+import { ContentGrid } from "@/components/content/content-grid"
+import { getServerContent } from "@/lib/supabase/server"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
-import Image from "next/image"
+export default async function TopsPage() {
+  const { content: tops } = await getServerContent("tops")
 
-export default function PerfilPage() {
-  const router = useRouter()
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  
-  const supabase = createClientSupabaseClient()
+  return (
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <div className="bg-gradient-to-b from-red-900/50 to-black">
+        <div className="container mx-auto px-4 py-12">
+          <h1 className="text-4xl font-bold text-white mb-4">TOPS</h1>
+          <p className="text-gray-300 max-w-2xl">
+            Nuestras selecciones de los mejores juegos por categoría, género y plataforma. Descubre los títulos
+            imprescindibles que no puedes perderte.
+          </p>
+        </div>
+      </div>
 
-  useEffect(() => {
-    async function getProfile() {
-      setLoading(true)
-      
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.push('/auth/login')
-        return
-      }
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
-      
-      if (error) {
-        console.error(error)
-      } else {
-        setProfile(data)
-      }
-      
-      setLoading(false)
-    }
-    
-    getProfile()
-  }, [router, supabase])
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12">
+        <ContentGrid items={tops || []} />
+      </div>
+    </main>
+  )
+}
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccess(false)
-    setUpdating(true)
-    
-    try {
-      con
