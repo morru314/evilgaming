@@ -1,47 +1,59 @@
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
 import Image from "next/image"
-import type { Content } from "@/types/supabase"
-import { formatDate, getCategoryColor, truncateText } from "@/lib/utils"
+import { formatDate, truncateText, getCategoryColor } from "@/lib/utils"
+import type { Database } from "@/types/supabase"
+
+type Content = Database["public"]["Tables"]["content"]["Row"] & {
+  profiles: { username: string } | null
+}
 
 interface ContentCardProps {
   content: Content
-  size?: "small" | "medium" | "large"
 }
 
-export default function ContentCard({ content, size = "medium" }: ContentCardProps) {
-  const { title, slug, excerpt, featured_image, content_type, category, created_at, rating } = content
-
-  const imageHeight = size === "small" ? 150 : size === "medium" ? 200 : 300
-  const titleLength = size === "small" ? 60 : size === "medium" ? 80 : 100
-  const excerptLength = size === "small" ? 80 : size === "medium" ? 120 : 160
+export function ContentCard({ content }: ContentCardProps) {
+  const href = `/${content.type}/${content.slug || content.id}`
 
   return (
-    <Link href={`/${content_type === "noticia" ? "noticias" : content_type === "review" ? "reviews" : "tops"}/${slug}`}>
-      <article className="content-card h-full flex flex-col">
-        <div className="relative">
-          {rating && content_type === "review" && <div className="rating-badge">{rating}</div>}
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+      <Link href={href}>
+        <div className="aspect-video relative">
           <Image
-            src={featured_image || `/placeholder.svg?height=${imageHeight}&width=600`}
-            alt={title}
-            width={600}
-            height={imageHeight}
-            className="w-full h-auto object-cover"
+            src={content.image_url || "/placeholder.svg"}
+            alt={content.title || "Content thumbnail"}
+            fill
+            className="object-cover"
           />
-          {category && (
-            <span className={`${getCategoryColor(category)} category-badge absolute bottom-4 left-4`}>
-              {category.toUpperCase()}
-            </span>
+          {content.category && (
+            <Badge className={`absolute top-2 left-2 ${getCategoryColor(content.category)}`}>{content.category}</Badge>
           )}
         </div>
-        <div className="p-4 flex-grow flex flex-col">
-          <h3 className={`font-bold ${size === "small" ? "text-lg" : size === "medium" ? "text-xl" : "text-2xl"} mb-2`}>
-            {truncateText(title, titleLength)}
-          </h3>
-          {excerpt && <p className="text-gray-400 mb-4">{truncateText(excerpt, excerptLength)}</p>}
-          <div className="text-sm text-gray-500 mt-auto">{formatDate(created_at)}</div>
+      </Link>
+
+      <CardHeader>
+        <Link href={href} className="hover:text-primary transition-colors">
+          <h3 className="text-xl font-semibold line-clamp-2">{content.title}</h3>
+        </Link>
+      </CardHeader>
+
+      <CardContent>
+        <p className="text-muted-foreground line-clamp-2">{truncateText(content.description || "", 150)}</p>
+      </CardContent>
+
+      <CardFooter className="flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={content.profiles?.avatar_url} />
+            <AvatarFallback>{content.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm text-muted-foreground">{content.profiles?.username}</span>
         </div>
-      </article>
-    </Link>
+        <time className="text-sm text-muted-foreground">{formatDate(content.created_at)}</time>
+      </CardFooter>
+    </Card>
   )
 }
 
