@@ -12,7 +12,7 @@ export function SectionHeader({ title, viewAllLink }: SectionHeaderProps) {
         <span className="w-1 h-6 bg-red-600 mr-3"></span>
         {title}
       </h2>
-      <Link href={viewAllLink} className="text-muted-foreground hover:text-foreground transition-colors">
+      <Link href={viewAllLink} className="text-gray-400 hover:text-red-500 transition-colors text-sm">
         Ver todo
       </Link>
     </div>
