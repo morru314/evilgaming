@@ -1,85 +1,132 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { Input } from "@/components/ui/input"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
-import { FileText, Users, BarChart, Settings } from 'lucide-react'
+import { createClientSupabaseClient } from "@/lib/supabase/client"
 
-export default function AdminPage() {
+export default function RegisterPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    noticias: 0,
-    reviews: 0,
-    tops: 0,
-    users: 0
-  })
-  
-  const supabase = createClientSupabaseClient()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [username, setUsername] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    async function checkAdmin() {
-      setLoading(true)
-      
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.push('/auth/login')
-        return
-      }
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single()
-      
-      if (error || data?.role !== 'admin') {
-        router.push('/')
-        return
-      }
-      
-      // Get stats
-      const [
-        { count: noticiasCount },
-        { count: reviewsCount },
-        { count: topsCount },
-        { count: usersCount }
-      ] = await Promise.all([
-        supabase.from('content').select('*', { count: 'exact', head: true }).eq('type', 'noticias'),
-        supabase.from('content').select('*', { count: 'exact', head: true }).eq('type', 'reviews'),
-        supabase.from('content').select('*', { count: 'exact', head: true }).eq('type', 'tops'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true })
-      ])
-      
-      setStats({
-        noticias: noticiasCount || 0,
-        reviews: reviewsCount || 0,
-        tops: topsCount || 0,
-        users: usersCount || 0
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    try {
+      const supabase = createClientSupabaseClient()
+
+      const { error: signUpError, data } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+          },
+        },
       })
-      
+
+      if (signUpError) throw signUpError
+
+      if (data.user) {
+        const { error: profileError } = await supabase.from("profiles").insert([
+          {
+            id: data.user.id,
+            username,
+            email,
+          },
+        ])
+
+        if (profileError) throw profileError
+      }
+
+      router.push("/auth/login")
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al registrarse")
+    } finally {
       setLoading(false)
     }
-    
-    checkAdmin()
-  }, [router, supabase])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Cargando panel de administración...</div>
-      </div>
-    )
   }
 
   return (
-    <main className="min-h-screen bg-black">
-      {/* Header */}
-      <div className="bg-gradient-to-b from-red-900/50 to-black">
-        <div className="container mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Panel de Administración</h1>
-          <p className="
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <Link href="/" className="flex justify-center mb-8">
+          <span className="text-2xl font-bold">
+            Evil<span className="text-red-600">Gaming</span>
+          </span>
+        </Link>
+
+        {/* Register Form */}
+        <div className="bg-navy-900 rounded-lg p-8">
+          <div className="flex gap-4 mb-8">
+            <Link href="/auth/login" className="flex-1 py-2 text-gray-400 hover:text-white text-center">
+              Iniciar Sesión
+            </Link>
+            <button className="flex-1 py-2 text-white font-medium border-b-2 border-red-600">Registrarse</button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Nombre de usuario</label>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="bg-navy-800 border-navy-700"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Email</label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-navy-800 border-navy-700"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Contraseña</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-navy-800 border-navy-700"
+                required
+              />
+            </div>
+
+            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
+              {loading ? "Creando cuenta..." : "Crear cuenta"}
+            </Button>
+
+            <p className="text-sm text-gray-400 text-center">
+              Al registrarte, aceptas nuestros términos y condiciones.
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
