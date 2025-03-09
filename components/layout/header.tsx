@@ -23,43 +23,37 @@ export function Header() {
       name: "YouTube",
       href: "https://youtube.com",
       icon: Youtube,
+      color: "hover:text-red-500",
     },
     {
       name: "Instagram",
       href: "https://instagram.com",
       icon: Instagram,
+      color: "hover:text-pink-500",
     },
     {
       name: "Twitch",
       href: "https://twitch.tv",
       icon: Twitch,
+      color: "hover:text-purple-500",
     },
     {
       name: "TikTok",
       href: "https://tiktok.com",
       icon: TikTok,
+      color: "hover:text-blue-400",
     },
   ]
 
   return (
-    <header className="bg-black border-b border-red-800">
+    <header className="bg-black border-b border-red-800 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Social Media Icons */}
-          <div className="flex items-center space-x-4">
-            {socialLinks.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="sr-only">{item.name}</span>
-              </a>
-            ))}
-          </div>
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="text-xl font-bold text-red-600">EVIL</span>
+            <span className="text-xl font-bold text-white">GAMING</span>
+          </Link>
 
           {/* Navigation */}
           <nav className="hidden md:flex space-x-8">
@@ -76,6 +70,22 @@ export function Header() {
               </Link>
             ))}
           </nav>
+
+          {/* Social Media Icons */}
+          <div className="hidden md:flex items-center space-x-4">
+            {socialLinks.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn("text-gray-400 transition-colors", item.color)}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="sr-only">{item.name}</span>
+              </a>
+            ))}
+          </div>
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-4">
