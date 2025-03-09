@@ -1,169 +1,181 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
+import Image from "next/image"
 
-export default function ProfilePage() {
+export default function PerfilPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [username, setUsername] = useState("")
-  const [fullName, setFullName] = useState("")
-  const [saving, setSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const supabase = createClientSupabaseClient()
 
   useEffect(() => {
-    async function loadUserProfile() {
-      try {
-        // Verificar si hay una sesión activa
-        const sessionResponse = await fetch("/api/auth/session")
-        const sessionData = await sessionResponse.json()
+    async function getProfile() {
+      setLoading(true)
 
-        if (!sessionData.success || !sessionData.user) {
-          // No hay sesión, redirigir al login
-          router.push("/auth/server-auth")
-          return
-        }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-        setUser(sessionData.user)
-
-        // Cargar el perfil del usuario
-        const profileResponse = await fetch(`/api/profile?userId=${sessionData.user.id}`)
-        const profileData = await profileResponse.json()
-
-        if (profileData.success && profileData.profile) {
-          setProfile(profileData.profile)
-          setUsername(profileData.profile.username || "")
-          setFullName(profileData.profile.full_name || "")
-        }
-      } catch (err: any) {
-        console.error("Error al cargar el perfil:", err)
-        setError(`Error al cargar el perfil: ${err.message}`)
-      } finally {
-        setLoading(false)
+      if (!session) {
+        router.push("/auth/login")
+        return
       }
+
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+
+      if (error) {
+        console.error(error)
+      } else {
+        setProfile(data)
+      }
+
+      setLoading(false)
     }
 
-    loadUserProfile()
-  }, [router])
+    getProfile()
+  }, [router, supabase])
 
-  const handleSaveProfile = async () => {
-    setSaving(true)
-    setSaveMessage(null)
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(false)
+    setUpdating(true)
 
     try {
-      const response = await fetch("/api/profile/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          full_name: fullName,
-        }),
-      })
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          username: profile.username,
+          bio: profile.bio,
+          website: profile.website,
+        })
+        .eq("id", profile.id)
 
-      const data = await response.json()
+      if (error) throw error
 
-      if (data.success) {
-        setSaveMessage("Perfil actualizado correctamente")
-      } else {
-        setError(data.message || "Error al actualizar el perfil")
-      }
-    } catch (err: any) {
-      setError(`Error al guardar: ${err.message}`)
+      setSuccess(true)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al actualizar el perfil")
     } finally {
-      setSaving(false)
+      setUpdating(false)
     }
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+    router.refresh()
   }
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4 max-w-2xl">
-        <Card className="bg-gray-900 border-gray-800">
-          <CardHeader>
-            <Skeleton className="h-8 w-48 bg-gray-800" />
-            <Skeleton className="h-4 w-72 bg-gray-800" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-24 bg-gray-800" />
-              <Skeleton className="h-10 w-full bg-gray-800" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32 bg-gray-800" />
-              <Skeleton className="h-10 w-full bg-gray-800" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Skeleton className="h-10 w-32 bg-gray-800" />
-          </CardFooter>
-        </Card>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Cargando perfil...</div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <Card className="bg-gray-900 border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-2xl">Tu Perfil</CardTitle>
-          <CardDescription>Administra tu información personal</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <div className="bg-gradient-to-b from-red-900/50 to-black">
+        <div className="container mx-auto px-4 py-12">
+          <h1 className="text-4xl font-bold text-white mb-4">Mi Perfil</h1>
+          <p className="text-gray-300 max-w-2xl">Gestiona tu información personal y preferencias de cuenta.</p>
+        </div>
+      </div>
 
-          {saveMessage && (
-            <Alert className="bg-green-900 border-green-800">
-              <AlertDescription className="text-green-100">{saveMessage}</AlertDescription>
-            </Alert>
-          )}
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-navy-900 rounded-lg p-8">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" value={user?.email || ""} disabled className="bg-gray-800 border-gray-700" />
-            <p className="text-xs text-gray-400">El email no se puede cambiar</p>
+            {success && (
+              <Alert className="mb-6 bg-green-900 border-green-800">
+                <AlertDescription className="text-green-300">Perfil actualizado correctamente</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="md:w-1/3">
+                <div className="aspect-square relative rounded-full overflow-hidden mb-4 max-w-[200px] mx-auto">
+                  <Image
+                    src={profile.avatar_url || "/placeholder.svg?height=200&width=200"}
+                    alt="Avatar"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-white mb-1">{profile.username}</h2>
+                  <p className="text-gray-400 mb-4">{profile.email}</p>
+                  <Button
+                    variant="outline"
+                    className="w-full border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    onClick={handleLogout}
+                  >
+                    Cerrar sesión
+                  </Button>
+                </div>
+              </div>
+
+              <div className="md:w-2/3">
+                <form onSubmit={handleUpdate} className="space-y-6">
+                  <div>
+                    <label className="text-sm text-gray-400">Nombre de usuario</label>
+                    <Input
+                      value={profile.username || ""}
+                      onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                      className="bg-navy-800 border-navy-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400">Biografía</label>
+                    <Textarea
+                      value={profile.bio || ""}
+                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                      className="bg-navy-800 border-navy-700 h-32"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400">Sitio web</label>
+                    <Input
+                      value={profile.website || ""}
+                      onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                      className="bg-navy-800 border-navy-700"
+                    />
+                  </div>
+
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={updating}>
+                    {updating ? "Actualizando..." : "Guardar cambios"}
+                  </Button>
+                </form>
+              </div>
+            </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="username">Nombre de usuario</Label>
-            <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="bg-gray-800 border-gray-700"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Nombre completo</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="bg-gray-800 border-gray-700"
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleSaveProfile} disabled={saving} className="bg-red-600 hover:bg-red-700">
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </main>
   )
 }
 
