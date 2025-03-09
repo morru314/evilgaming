@@ -2,20 +2,19 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Youtube, Instagram, Twitch, TwitterIcon as TikTok } from "lucide-react"
+import { Youtube, Instagram, DiscIcon as Discord, Twitch } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
 
 export function Header() {
   const pathname = usePathname()
-  const supabase = createClientSupabaseClient()
 
   const navigation = [
-    { name: "Inicio", href: "/" },
-    { name: "Noticias", href: "/noticias" },
-    { name: "Reviews", href: "/reviews" },
-    { name: "Tops", href: "/tops" },
+    { name: "INICIO", href: "/" },
+    { name: "NOTICIAS", href: "/noticias" },
+    { name: "REVIEWS", href: "/reviews" },
+    { name: "FOROS", href: "/foros" },
+    { name: "CONTACTO", href: "/contacto" },
   ]
 
   const socialLinks = [
@@ -32,44 +31,29 @@ export function Header() {
       color: "hover:text-pink-500",
     },
     {
+      name: "Discord",
+      href: "https://discord.gg",
+      icon: Discord,
+      color: "hover:text-indigo-500",
+    },
+    {
       name: "Twitch",
       href: "https://twitch.tv",
       icon: Twitch,
       color: "hover:text-purple-500",
     },
-    {
-      name: "TikTok",
-      href: "https://tiktok.com",
-      icon: TikTok,
-      color: "hover:text-blue-400",
-    },
   ]
 
   return (
-    <header className="bg-black border-b border-red-800 sticky top-0 z-50">
+    <header className="bg-black border-b border-red-900/20 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-red-600">EVIL</span>
-            <span className="text-xl font-bold text-white">GAMING</span>
+            <span className="text-xl font-bold">
+              Evil<span className="text-red-600">Gaming</span>
+            </span>
           </Link>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-red-500",
-                  pathname === item.href ? "text-red-500" : "text-gray-300",
-                )}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
 
           {/* Social Media Icons */}
           <div className="hidden md:flex items-center space-x-4">
@@ -86,6 +70,22 @@ export function Header() {
               </a>
             ))}
           </div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-red-500",
+                  pathname === item.href ? "text-red-500" : "text-gray-300",
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-4">
