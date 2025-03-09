@@ -5,9 +5,22 @@ export default async function ReviewsPage() {
   const { content: reviews } = await getServerContent("reviews")
 
   return (
-    <main className="container mx-auto px-4 py-12 min-h-screen bg-black text-white">
-      <h1 className="text-3xl font-bold mb-8">Reviews</h1>
-      <ContentGrid items={reviews || []} />
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <div className="bg-gradient-to-b from-red-900/50 to-black">
+        <div className="container mx-auto px-4 py-12">
+          <h1 className="text-4xl font-bold text-white mb-4">REVIEWS</h1>
+          <p className="text-gray-300 max-w-2xl">
+            Análisis detallados y honestos de los últimos lanzamientos. Nuestro equipo evalúa cada aspecto para ayudarte
+            a decidir qué juegos merecen tu tiempo y dinero.
+          </p>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12">
+        <ContentGrid items={reviews || []} />
+      </div>
     </main>
   )
 }
