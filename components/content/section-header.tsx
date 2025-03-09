@@ -1,32 +1,20 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 
 interface SectionHeaderProps {
   title: string
-  viewAllLink?: string
-  viewAllText?: string
-  className?: string
+  viewAllLink: string
 }
 
-export default function SectionHeader({
-  title,
-  viewAllLink,
-  viewAllText = "Ver todo",
-  className = "",
-}: SectionHeaderProps) {
+export function SectionHeader({ title, viewAllLink }: SectionHeaderProps) {
   return (
-    <div className={`flex items-center justify-between mb-6 ${className}`}>
+    <div className="flex justify-between items-center mb-6">
       <h2 className="text-2xl font-bold flex items-center">
-        <span className="text-red-600 mr-2">|</span>
+        <span className="w-1 h-6 bg-red-600 mr-3"></span>
         {title}
       </h2>
-      {viewAllLink && (
-        <Link href={viewAllLink}>
-          <Button variant="ghost" className="text-gray-400 hover:text-white">
-            {viewAllText}
-          </Button>
-        </Link>
-      )}
+      <Link href={viewAllLink} className="text-muted-foreground hover:text-foreground transition-colors">
+        Ver todo
+      </Link>
     </div>
   )
 }
