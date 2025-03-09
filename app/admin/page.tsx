@@ -1,147 +1,181 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlusCircle, Edit, Trash2, FileText, Film, ListOrdered } from "lucide-react"
+import type React from "react"
 
-export default function AdminPage() {
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
+import Image from "next/image"
+
+export default function PerfilPage() {
+  const router = useRouter()
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [content, setContent] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState("all")
+  const [success, setSuccess] = useState(false)
+
+  const supabase = createClientSupabaseClient()
 
   useEffect(() => {
-    async function loadContent() {
-      try {
-        const response = await fetch("/api/admin/content")
-        const data = await response.json()
+    async function getProfile() {
+      setLoading(true)
 
-        if (data.success) {
-          setContent(data.content || [])
-        } else {
-          setError(data.message || "Error al cargar el contenido")
-        }
-      } catch (err: any) {
-        console.error("Error al cargar contenido:", err)
-        setError(`Error al cargar contenido: ${err.message}`)
-      } finally {
-        setLoading(false)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push("/auth/login")
+        return
       }
+
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+
+      if (error) {
+        console.error(error)
+      } else {
+        setProfile(data)
+      }
+
+      setLoading(false)
     }
 
-    loadContent()
-  }, [])
+    getProfile()
+  }, [router, supabase])
 
-  const filteredContent = activeTab === "all" ? content : content.filter((item) => item.type === activeTab)
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(false)
+    setUpdating(true)
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "noticias":
-        return <FileText className="h-5 w-5 text-blue-400" />
-      case "reviews":
-        return <Film className="h-5 w-5 text-green-400" />
-      case "tops":
-        return <ListOrdered className="h-5 w-5 text-yellow-400" />
-      default:
-        return <FileText className="h-5 w-5" />
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          username: profile.username,
+          bio: profile.bio,
+          website: profile.website,
+        })
+        .eq("id", profile.id)
+
+      if (error) throw error
+
+      setSuccess(true)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al actualizar el perfil")
+    } finally {
+      setUpdating(false)
     }
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+    router.refresh()
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Cargando perfil...</div>
+      </div>
+    )
+  }
+
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Panel de Administración</h1>
-        <Link href="/admin/crear">
-          <Button className="bg-red-600 hover:bg-red-700">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Crear Contenido
-          </Button>
-        </Link>
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <div className="bg-gradient-to-b from-red-900/50 to-black">
+        <div className="container mx-auto px-4 py-12">
+          <h1 className="text-4xl font-bold text-white mb-4">Mi Perfil</h1>
+          <p className="text-gray-300 max-w-2xl">Gestiona tu información personal y preferencias de cuenta.</p>
+        </div>
       </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-navy-900 rounded-lg p-8">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid grid-cols-4 mb-4">
-          <TabsTrigger value="all">Todos</TabsTrigger>
-          <TabsTrigger value="noticias">Noticias</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
-          <TabsTrigger value="tops">Tops</TabsTrigger>
-        </TabsList>
-      </Tabs>
+            {success && (
+              <Alert className="mb-6 bg-green-900 border-green-800">
+                <AlertDescription className="text-green-300">Perfil actualizado correctamente</AlertDescription>
+              </Alert>
+            )}
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="bg-gray-900 border-gray-800 opacity-50">
-              <CardHeader className="pb-2">
-                <CardTitle className="h-6 bg-gray-800 rounded animate-pulse"></CardTitle>
-                <CardDescription className="h-4 bg-gray-800 rounded animate-pulse mt-2 w-3/4"></CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-gray-800 rounded animate-pulse mb-2"></div>
-                <div className="h-4 bg-gray-800 rounded animate-pulse w-3/4"></div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="h-8 bg-gray-800 rounded animate-pulse w-20"></div>
-                <div className="h-8 bg-gray-800 rounded animate-pulse w-20"></div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : filteredContent.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredContent.map((item) => (
-            <Card key={item.id} className="bg-gray-900 border-gray-800">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    {getTypeIcon(item.type)}
-                    <span className="ml-2 text-sm text-gray-400">{item.type}</span>
-                  </div>
-                  <span className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</span>
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="md:w-1/3">
+                <div className="aspect-square relative rounded-full overflow-hidden mb-4 max-w-[200px] mx-auto">
+                  <Image
+                    src={profile.avatar_url || "/placeholder.svg?height=200&width=200"}
+                    alt="Avatar"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                <CardTitle className="mt-2">{item.title}</CardTitle>
-                <CardDescription className="line-clamp-1">{item.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-400 line-clamp-2">{item.content.substring(0, 100)}...</p>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Link href={`/admin/editar/${item.id}`}>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-white mb-1">{profile.username}</h2>
+                  <p className="text-gray-400 mb-4">{profile.email}</p>
+                  <Button
+                    variant="outline"
+                    className="w-full border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    onClick={handleLogout}
+                  >
+                    Cerrar sesión
                   </Button>
-                </Link>
-                <Button variant="outline" size="sm" className="text-red-500 hover:text-red-400">
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Eliminar
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                </div>
+              </div>
+
+              <div className="md:w-2/3">
+                <form onSubmit={handleUpdate} className="space-y-6">
+                  <div>
+                    <label className="text-sm text-gray-400">Nombre de usuario</label>
+                    <Input
+                      value={profile.username || ""}
+                      onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                      className="bg-navy-800 border-navy-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400">Biografía</label>
+                    <Textarea
+                      value={profile.bio || ""}
+                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                      className="bg-navy-800 border-navy-700 h-32"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400">Sitio web</label>
+                    <Input
+                      value={profile.website || ""}
+                      onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                      className="bg-navy-800 border-navy-700"
+                    />
+                  </div>
+
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={updating}>
+                    {updating ? "Actualizando..." : "Guardar cambios"}
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-900 rounded-lg">
-          <p className="text-gray-400 mb-4">No hay contenido disponible</p>
-          <Link href="/admin/crear">
-            <Button className="bg-red-600 hover:bg-red-700">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Crear tu primer contenido
-            </Button>
-          </Link>
-        </div>
-      )}
-    </div>
+      </div>
+    </main>
   )
 }
 
