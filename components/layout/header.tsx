@@ -1,100 +1,92 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/router"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu, User, FileText } from "lucide-react"
-import { ModeToggle } from "@/components/mode-toggle"
+import { Youtube, Instagram, Twitch, TwitterIcon as TikTok } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
 
 export function Header() {
-  const { data: session } = useSession()
-  const user = session?.user
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+  const supabase = createClientSupabaseClient()
+
+  const navigation = [
+    { name: "Inicio", href: "/" },
+    { name: "Noticias", href: "/noticias" },
+    { name: "Reviews", href: "/reviews" },
+    { name: "Tops", href: "/tops" },
+  ]
+
+  const socialLinks = [
+    {
+      name: "YouTube",
+      href: "https://youtube.com",
+      icon: Youtube,
+    },
+    {
+      name: "Instagram",
+      href: "https://instagram.com",
+      icon: Instagram,
+    },
+    {
+      name: "Twitch",
+      href: "https://twitch.tv",
+      icon: Twitch,
+    },
+    {
+      name: "TikTok",
+      href: "https://tiktok.com",
+      icon: TikTok,
+    },
+  ]
 
   return (
-    <header className="bg-gray-900 text-white py-4">
-      <div className="container mx-auto flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold">
-          My App
-        </Link>
+    <header className="bg-black border-b border-red-800">
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
+          {/* Social Media Icons */}
+          <div className="flex items-center space-x-4">
+            {socialLinks.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="sr-only">{item.name}</span>
+              </a>
+            ))}
+          </div>
 
-        <div className="hidden md:flex items-center space-x-4">
-          <ModeToggle />
-          {user ? (
-            <div className="flex items-center space-x-2">
-              <Link href="/admin">
-                <Button variant="ghost" className="text-white hover:text-red-500">
-                  <FileText className="h-5 w-5 mr-2" />
-                  Panel Admin
-                </Button>
+          {/* Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-red-500",
+                  pathname === item.href ? "text-red-500" : "text-gray-300",
+                )}
+              >
+                {item.name}
               </Link>
-              <Link href="/perfil">
-                <Button variant="ghost" className="text-white hover:text-red-500">
-                  <User className="h-5 w-5 mr-2" />
-                  Perfil
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <>
-              <Link href="/auth/server-auth">
-                <Button variant="ghost" className="text-white hover:text-red-500">
-                  Iniciar Sesión
-                </Button>
-              </Link>
-              <Link href="/auth/server-auth?tab=register">
-                <Button className="bg-red-600 hover:bg-red-700 text-white">Registrarse</Button>
-              </Link>
-            </>
-          )}
-        </div>
+            ))}
+          </nav>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" className="md:hidden">
-              <Menu className="h-5 w-5" />
+          {/* Auth Buttons */}
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" className="text-gray-300 hover:text-red-500" asChild>
+              <Link href="/auth/login">Iniciar sesión</Link>
             </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="bg-gray-900 text-white">
-            <SheetHeader>
-              <SheetTitle>Menu</SheetTitle>
-              <SheetDescription>Navigate through the app.</SheetDescription>
-            </SheetHeader>
-            <div className="flex flex-col space-y-2 pt-4 border-t border-gray-800">
-              {user ? (
-                <>
-                  <Link href="/admin">
-                    <Button variant="ghost" className="text-white hover:text-red-500 w-full justify-start">
-                      <FileText className="h-5 w-5 mr-2" />
-                      Panel Admin
-                    </Button>
-                  </Link>
-                  <Link href="/perfil">
-                    <Button variant="ghost" className="text-white hover:text-red-500 w-full justify-start">
-                      <User className="h-5 w-5 mr-2" />
-                      Perfil
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/server-auth">
-                    <Button variant="ghost" className="text-white hover:text-red-500 w-full justify-start">
-                      Iniciar Sesión
-                    </Button>
-                  </Link>
-                  <Link href="/auth/server-auth?tab=register">
-                    <Button className="bg-red-600 hover:bg-red-700 text-white w-full">Registrarse</Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" asChild>
+              <Link href="/auth/register">Registrarse</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </header>
   )
